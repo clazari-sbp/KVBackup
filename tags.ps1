@@ -1,5 +1,5 @@
-$backupLocation = "Storage"
-$backupContainer = "Container"
+$backupLocation = "rgkvbackup0012"
+$backupContainer = "backup"
 $automationAccount = "auto01"
 $method = "SA"
 $resourceGroup = "Temp2"
