@@ -102,11 +102,12 @@ $keyvaults = Get-AzKeyVault
         #Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
         $storageKey1 = Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName | Where-Object {$_.KeyName -eq "key1"}
         Write-Host $storageKey1.Value
-        New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageKey1.Value
+        $storageContext = New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageKey1.Value
         foreach ($keyvault in $keyvaults) {
             backup-keyVaultItems -keyvaultName $keyvault.VaultName
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
-                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
+                #Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
+                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -Force
             }
          }
     }
