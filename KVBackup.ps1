@@ -99,7 +99,10 @@ $keyvaults = Get-AzKeyVault
         if ($null -eq (get-AzResourceGroup $resourceGroupName -ErrorAction SilentlyContinue)) {
             New-AzResourceGroup $resourceGroupName
         }
-        Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
+        #Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
+        $storageKey1 = Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName | Where-Object {$_.KeyName -eq "key1"}
+        Write-Host $storageKey1.Value
+        New-AzStorageContext -StorageAccountName $storageAccountName -StorageAccountKey $storageKey1.Value
         foreach ($keyvault in $keyvaults) {
             backup-keyVaultItems -keyvaultName $keyvault.VaultName
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
@@ -107,4 +110,3 @@ $keyvaults = Get-AzKeyVault
             }
          }
     }
-    
