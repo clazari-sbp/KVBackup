@@ -107,7 +107,8 @@ $keyvaults = Get-AzKeyVault
             backup-keyVaultItems -keyvaultName $keyvault.VaultName
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
                 #Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
-                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -Force
+                #Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -Force
+                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -UseConnectedAccount -Force
             }
          }
     }
