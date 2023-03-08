@@ -1,8 +1,32 @@
-$backupLocation = "rgkvbackup0012"
-$backupContainer = "backup"
+# param(
+#     [Parameter()]
+#     [string]$backupLocation,
+#     [Parameter()]
+#     [string]$backupContainer
+# )
+$backupLocation = "Storage"
+$backupContainer = "Container"
 $automationAccount = "auto01"
 $method = "SA"
-$resourceGroup = "Temp2"
+$resourceGroup = "Temp"
+
+# Set the remote execution policy with the Set-ExecutionPolicy cmdlet.
+Set-ExecutionPolicy RemoteSigned -Force;
+
+# Install the latest NuGet package provider using the Install-PackageProvider cmdlet.
+Install-PackageProvider -Name NuGet -Force;
+
+# Allow the PowerShell gallery repository to be trusted with the Set-PSRepository cmdlet.
+Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted;
+
+# Install the latest PowerShellGet module using the Install-Module cmdlet.
+Install-Module -Name PowerShellGet -Force;
+
+# Install the Azure PowerShell (Az) module using the Install-Module cmdlet.
+Install-Module -Name Az -Force -AllowClobber;
+
+
+
 
 # Ensures you do not inherit an AzContext in your runbook
 Write-Host "Clearing Context"
