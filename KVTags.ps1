@@ -4,29 +4,13 @@
 #     [Parameter()]
 #     [string]$backupContainer
 # )
+
 $backupLocation = "Storage"
 $backupContainer = "Container"
 $automationAccount = "auto01"
-$method = "SA"
-$resourceGroup = "Temp"
-
-# Set the remote execution policy with the Set-ExecutionPolicy cmdlet.
-Set-ExecutionPolicy RemoteSigned -Force;
-
-# Install the latest NuGet package provider using the Install-PackageProvider cmdlet.
-Install-PackageProvider -Name NuGet -Force;
-
-# Allow the PowerShell gallery repository to be trusted with the Set-PSRepository cmdlet.
-Set-PSRepository -Name "PSGallery" -InstallationPolicy Trusted;
-
-# Install the latest PowerShellGet module using the Install-Module cmdlet.
-Install-Module -Name PowerShellGet -Force;
-
-# Install the Azure PowerShell (Az) module using the Install-Module cmdlet.
-Install-Module -Name Az -Force -AllowClobber;
-
-
-
+$method = "UA"
+$resourceGroup = "Temp2"
+#$tenantId = '5ad10107-7247-4c92-83c8-df93d1e8a324'
 
 # Ensures you do not inherit an AzContext in your runbook
 Write-Host "Clearing Context"
@@ -47,7 +31,7 @@ Write-Host "Storing Context"
 $AzureContext = Set-AzContext -SubscriptionName $AzureContext.Subscription `
     -DefaultProfile $AzureContext
 
-if ($method -eq "SA")
+if ($method -eq "SU")
     {
         Write-Output "Using system-assigned managed identity"
     }
@@ -79,7 +63,6 @@ else {
         exit
      }
 
-Write-Host "Tagging"
 $tags = @{BackupLocation=$backupLocation;BackupContainer=$backupContainer}
 $vaults = Get-AzKeyVault
 foreach ($vault in $vaults){
