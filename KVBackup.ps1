@@ -3,7 +3,6 @@ $storageAccountName = "rgkvbackup0012"
 $containerName = "backup"
 $automationAccount = "auto01"
 $method = "SA"
-$blobEndpoint = "https://rgkvbackup0012.blob.core.windows.net"
 $backupFolder = "~\KeyVaultBackup"
 
 
@@ -59,7 +58,6 @@ else {
      }
 
 function backup-keyVaultItems($keyvaultName) {
-    #######Parameters
     #######Setup backup directory
     If ((test-path $backupFolder)) {
         Remove-Item $backupFolder -Recurse -Force
@@ -67,8 +65,10 @@ function backup-keyVaultItems($keyvaultName) {
     }
     ####### Backup items
     New-Item -ItemType Directory -Force -Path "$($backupFolder)\$($keyvaultName)" | Out-Null
+    
     #Write-Output "Starting backup of KeyVault to a local directory."
     Write-Host "Starting backup of KeyVault to a local directory."
+    
     ###Certificates
     $certificates = Get-AzKeyVaultCertificate -VaultName $keyvaultName 
     foreach ($cert in $certificates) {
@@ -99,19 +99,14 @@ $keyvaults = Get-AzKeyVault
             New-AzResourceGroup $resourceGroupName
         }
         Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
-        #New-AzStorageContext -ConnectionString $connectionString
         $storageKey1 = Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName | Where-Object {$_.KeyName -eq "key1"}
         Write-Host $storageKey1.Value
         $connectionString = 'DefaultEndpointsProtocol=https;AccountName=' + $storageAccountName + ';AccountKey=' + $storageKey1.Value
         Write-Host $connectionString
-        #$storageContext = New-AzStorageContext -StorageAccountName $storageAccountName -UseConnectedAccount
-        $storageContext = New-AzStorageContext -ConnectionString $connectionString
         foreach ($keyvault in $keyvaults) {
             backup-keyVaultItems -keyvaultName $keyvault.VaultName
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
-                #Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
-                Set-AzStorageBlobContent -BlobEndpoint $blobEndpoint -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -Force
-                #Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageContext -UseConnectedAccount -Force
+                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
             }
          }
     }
