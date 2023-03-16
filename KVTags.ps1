@@ -1,16 +1,10 @@
-# param(
-#     [Parameter()]
-#     [string]$backupLocation,
-#     [Parameter()]
-#     [string]$backupContainer
-# )
-
-$backupLocation = "Storage"
-$backupContainer = "Container"
+$resourceGroupName = "Temp2"
+$storageAccountName = "rgkvbackup0012"
+$containerName = "backup"
 $automationAccount = "auto01"
-$method = "UA"
-$resourceGroup = "Temp2"
-#$tenantId = '5ad10107-7247-4c92-83c8-df93d1e8a324'
+$method = "SA"
+$backupFolder = "~\KeyVaultBackup"
+
 
 # Ensures you do not inherit an AzContext in your runbook
 Write-Host "Clearing Context"
@@ -31,7 +25,7 @@ Write-Host "Storing Context"
 $AzureContext = Set-AzContext -SubscriptionName $AzureContext.Subscription `
     -DefaultProfile $AzureContext
 
-if ($method -eq "SU")
+if ($method -eq "SA")
     {
         Write-Output "Using system-assigned managed identity"
     }
@@ -63,9 +57,56 @@ else {
         exit
      }
 
-$tags = @{BackupLocation=$backupLocation;BackupContainer=$backupContainer}
-$vaults = Get-AzKeyVault
-foreach ($vault in $vaults){
-Update-AzTag -ResourceId $vault.resourceid -Tag $tags -Operation Merge
-$tags = @{BackupLocation=$backupLocation;BackupContainer=$backupContainer}
-}   
+function backup-keyVaultItems($keyvaultName) {
+    #######Setup backup directory
+    If ((test-path $backupFolder)) {
+        Remove-Item $backupFolder -Recurse -Force
+
+    }
+    ####### Backup items
+    New-Item -ItemType Directory -Force -Path "$($backupFolder)\$($keyvaultName)" | Out-Null
+    
+    #Write-Output "Starting backup of KeyVault to a local directory."
+    Write-Host "Starting backup of KeyVault to a local directory."
+    
+    ###Certificates
+    $certificates = Get-AzKeyVaultCertificate -VaultName $keyvaultName 
+    foreach ($cert in $certificates) {
+        Backup-AzKeyVaultCertificate -Name $cert.name -VaultName $keyvaultName -OutputFile "$backupFolder\$keyvaultName\certificate-$($cert.name)" | Out-Null
+    }
+    ###Secrets
+    $secrets = Get-AzKeyVaultSecret -VaultName $keyvaultName
+    foreach ($secret in $secrets) {
+        #Exclude any secrets automatically generated when creating a cert, as these cannot be backed up   
+        if (! ($certificates.Name -contains $secret.name)) {
+            Backup-AzKeyVaultSecret -Name $secret.name -VaultName $keyvaultName -OutputFile "$backupFolder\$keyvaultName\secret-$($secret.name)" | Out-Null
+        }
+    }
+    
+    #keys
+    $keys = Get-AzKeyVaultKey -VaultName $keyvaultName
+    foreach ($kvkey in $keys) {
+        #Exclude any keys automatically generated when creating a cert, as these cannot be backed up   
+        if (! ($certificates.Name -contains $kvkey.name)) {
+            Backup-AzKeyVaultKey -Name $kvkey.name -VaultName $keyvaultName -OutputFile "$backupFolder\$keyvaultName\key-$($kvkey.name)" | Out-Null
+        }
+    }
+}
+
+$keyvaults = Get-AzKeyVault 
+    if ($keyvaults) {
+        if ($null -eq (get-AzResourceGroup $resourceGroupName -ErrorAction SilentlyContinue)) {
+            New-AzResourceGroup $resourceGroupName
+        }
+        Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
+        $storageKey1 = Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName | Where-Object {$_.KeyName -eq "key1"}
+        Write-Host $storageKey1.Value
+        $connectionString = 'DefaultEndpointsProtocol=https;AccountName=' + $storageAccountName + ';AccountKey=' + $storageKey1.Value
+        Write-Host $connectionString
+        foreach ($keyvault in $keyvaults) {
+            backup-keyVaultItems -keyvaultName $keyvault.VaultName
+            foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
+                Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
+            }
+         }
+    }
