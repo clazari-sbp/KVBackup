@@ -99,6 +99,7 @@ $keyvaults = Get-AzKeyVault
             New-AzResourceGroup $resourceGroupName
         }
         Set-AzCurrentStorageAccount -ResourceGroupName $resourceGroupName -AccountName $storageAccountName
+        Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -DefaultAction Allow
         $storageKey1 = Get-AzStorageAccountKey -ResourceGroupName $resourceGroupName -Name $storageAccountName | Where-Object {$_.KeyName -eq "key1"}
         Write-Host $storageKey1.Value
         $connectionString = 'DefaultEndpointsProtocol=https;AccountName=' + $storageAccountName + ';AccountKey=' + $storageKey1.Value
@@ -108,5 +109,7 @@ $keyvaults = Get-AzKeyVault
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
                 Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
             }
+        Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -DefaultAction Deny
+        Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -Bypass None 
          }
     }
