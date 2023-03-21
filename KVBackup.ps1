@@ -109,7 +109,8 @@ $keyvaults = Get-AzKeyVault
             foreach ($file in (get-childitem "$($backupFolder)\$($keyvault.VaultName)")) {
                 Set-AzStorageBlobContent -File $file.FullName -Container $containerName -Blob $file.name -Context $storageAccountName.context -Force
             }
-        Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -DefaultAction Deny
+        #Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -DefaultAction Deny
+        Set-AzStorageAccount -ResourceGroupName $resourceGroupName -Name $storageAccountName -PublicNetworkAccess Disabled
         Update-AzStorageAccountNetworkRuleSet -ResourceGroupName $resourceGroupName -Name $storageAccountName -Bypass None 
          }
     }
